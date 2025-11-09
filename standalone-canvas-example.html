@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>独立画布示例 - 基于 Jaaz 画布</title>
+    
+    <!-- Excalidraw 核心 CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw/dist/excalidraw.min.css">
+    
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .canvas-container {
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        .toolbar {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        .export-buttons {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        button {
+            margin: 2px;
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f9f9f9;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        button:hover {
+            background: #e9e9e9;
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <h3>画布工具</h3>
+        <button onclick="clearCanvas()">清空画布</button>
+        <button onclick="loadSampleData()">加载示例</button>
+        <button onclick="addText()">添加文本</button>
+        <button onclick="addImage()">添加图片</button>
+    </div>
+    
+    <div class="export-buttons">
+        <h3>导出</h3>
+        <button onclick="exportAsPNG()">导出 PNG</button>
+        <button onclick="exportAsSVG()">导出 SVG</button>
+        <button onclick="exportAsJSON()">导出 JSON</button>
+        <button onclick="exportAsJSONWithFiles()">导出 JSON(含文件)</button>
+    </div>
+    
+    <button class="theme-toggle" onclick="toggleTheme()">切换主题</button>
+    
+    <div id="canvas-root" class="canvas-container"></div>
+
+    <!-- Excalidraw 核心 JS -->
+    <script src="https://unpkg.com/@excalidraw/excalidraw/dist/excalidraw.min.js"></script>
+    
+    <script>
+        // 画布实例
+        let excalidrawAPI = null;
+        let isDark = false;
+        
+        // 初始化画布
+        function initCanvas() {
+            const root = document.getElementById('canvas-root');
+            
+            excalidrawAPI = Excalidraw.initialize(root, {
+                initialData: {
+                    elements: [],
+                    appState: {
+                        viewBackgroundColor: '#ffffff',
+                        currentItemStrokeColor: '#000000',
+                        currentItemBackgroundColor: '#ffffff',
+                        gridSize: 20
+                    },
+                    files: {}
+                },
+                UIOptions: {
+                    canvasActions: {
+                        export: false, // 禁用内置导出，使用自定义
+                        saveToActiveFile: false,
+                        loadScene: false
+                    }
+                },
+                name: '独立画布',
+                onChange: (elements, appState, files) => {
+                    // 画布变化时的回调
+                    console.log('画布已更新', {
+                        elementsCount: elements.length,
+                        appState: appState
+                    });
+                },
+                onPointerUpdate: ({ pointer, button, pointersMap, viewport, zoom }) => {
+                    // 指针更新回调
+                }
+            });
+        }
+        
+        // 清空画布
+        function clearCanvas() {
+            if (excalidrawAPI) {
+                excalidrawAPI.updateScene({
+                    elements: [],
+                    appState: { viewBackgroundColor: isDark ? '#1e1e1e' : '#ffffff' }
+                });
+            }
+        }
+        
+        // 加载示例数据
+        function loadSampleData() {
+            const sampleElements = [
+                {
+                    id: 'rect-1',
+                    type: 'rectangle',
+                    x: 100,
+                    y: 100,
+                    width: 200,
+                    height: 100,
+                    angle: 0,
+                    strokeColor: '#000000',
+                    backgroundColor: '#ffcc00',
+                    strokeWidth: 2,
+                    strokeStyle: 'solid',
+                    fillStyle: 'solid'
+                },
+                {
+                    id: 'text-1',
+                    type: 'text',
+                    x: 150,
+                    y: 150,
+                    width: 100,
+                    height: 25,
+                    angle: 0,
+                    strokeColor: '#000000',
+                    backgroundColor: 'transparent',
+                    strokeWidth: 1,
+                    strokeStyle: 'solid',
+                    fillStyle: 'solid',
+                    text: '示例文本',
+                    fontSize: 20,
+                    fontFamily: 1,
+                    textAlign: 'center',
+                    verticalAlign: 'middle'
+                }
+            ];
+            
+            if (excalidrawAPI) {
+                excalidrawAPI.updateScene({
+                    elements: sampleElements
+                });
+            }
+        }
+        
+        // 添加文本
+        function addText() {
+            if (excalidrawAPI) {
+                const text = prompt('请输入文本内容:') || '新文本';
+                const newText = {
+                    id: 'text-' + Date.now(),
+                    type: 'text',
+                    x: 200,
+                    y: 200,
+                    width: 100,
+                    height: 25,
+                    angle: 0,
+                    strokeColor: '#000000',
+                    backgroundColor: 'transparent',
+                    strokeWidth: 1,
+                    strokeStyle: 'solid',
+                    fillStyle: 'solid',
+                    text: text,
+                    fontSize: 20,
+                    fontFamily: 1,
+                    textAlign: 'left',
+                    verticalAlign: 'top'
+                };
+                
+                excalidrawAPI.updateScene({
+                    elements: [
+                        ...excalidrawAPI.getSceneElements(),
+                        newText
+                    ]
+                });
+            }
+        }
+        
+        // 添加图片
+        function addImage() {
+            const url = prompt('请输入图片URL:') || 'https://picsum.photos/300/200';
+            
+            if (excalidrawAPI) {
+                excalidrawAPI.addFiles({
+                    [url]: {
+                        id: 'image-' + Date.now(),
+                        created: Date.now(),
+                        dataURL: url,
+                        mimeType: 'image/png',
+                        fileName: 'image.png'
+                    }
+                });
+                
+                const newImage = {
+                    id: 'image-' + Date.now(),
+                    type: 'image',
+                    x: 300,
+                    y: 300,
+                    width: 300,
+                    height: 200,
+                    angle: 0,
+                    strokeColor: '#000000',
+                    backgroundColor: 'transparent',
+                    strokeWidth: 1,
+                    strokeStyle: 'solid',
+                    fillStyle: 'solid',
+                    fileId: url,
+                    scale: [1, 1]
+                };
+                
+                excalidrawAPI.updateScene({
+                    elements: [
+                        ...excalidrawAPI.getSceneElements(),
+                        newImage
+                    ]
+                });
+            }
+        }
+        
+        // 导出为 PNG
+        async function exportAsPNG() {
+            if (excalidrawAPI) {
+                const canvas = await excalidrawAPI.exportToCanvas({
+                    elements: excalidrawAPI.getSceneElements(),
+                    appState: excalidrawAPI.getAppState(),
+                    files: excalidrawAPI.getFiles(),
+                    mimeType: 'image/png'
+                });
+                
+                downloadBlob(canvas.toDataURL('image/png'), 'canvas.png');
+            }
+        }
+        
+        // 导出为 SVG
+        async function exportAsSVG() {
+            if (excalidrawAPI) {
+                const svg = await excalidrawAPI.exportToSvg({
+                    elements: excalidrawAPI.getSceneElements(),
+                    appState: excalidrawAPI.getAppState(),
+                    files: excalidrawAPI.getFiles()
+                });
+                
+                const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                downloadBlob(url, 'canvas.svg', true);
+                URL.revokeObjectURL(url);
+            }
+        }
+        
+        // 导出为 JSON
+        function exportAsJSON() {
+            if (excalidrawAPI) {
+                const data = {
+                    type: 'excalidraw',
+                    version: 2,
+                    elements: excalidrawAPI.getSceneElements(),
+                    appState: excalidrawAPI.getAppState(),
+                    files: excalidrawAPI.getFiles()
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                downloadBlob(url, 'canvas.json', true);
+                URL.revokeObjectURL(url);
+            }
+        }
+        
+        // 导出为 JSON (包含文件数据)
+        function exportAsJSONWithFiles() {
+            if (excalidrawAPI) {
+                const elements = excalidrawAPI.getSceneElements();
+                const files = excalidrawAPI.getFiles();
+                
+                // 将文件转换为 base64
+                const processedFiles = {};
+                for (const [key, file] of Object.entries(files)) {
+                    if (file.dataURL) {
+                        processedFiles[key] = file;
+                    } else {
+                        processedFiles[key] = {
+                            ...file,
+                            dataURL: file.dataURL
+                        };
+                    }
+                }
+                
+                const data = {
+                    type: 'excalidraw',
+                    version: 2,
+                    elements: elements,
+                    appState: excalidrawAPI.getAppState(),
+                    files: processedFiles
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                downloadBlob(url, 'canvas-with-files.json', true);
+                URL.revokeObjectURL(url);
+            }
+        }
+        
+        // 下载文件
+        function downloadBlob(data, filename, isUrl = false) {
+            const a = document.createElement('a');
+            if (isUrl) {
+                a.href = data;
+            } else {
+                a.href = data;
+            }
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+        
+        // 切换主题
+        function toggleTheme() {
+            isDark = !isDark;
+            if (excalidrawAPI) {
+                excalidrawAPI.updateScene({
+                    appState: {
+                        viewBackgroundColor: isDark ? '#1e1e1e' : '#ffffff',
+                        currentItemStrokeColor: isDark ? '#ffffff' : '#000000',
+                        currentItemBackgroundColor: isDark ? '#1e1e1e' : '#ffffff'
+                    }
+                });
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initCanvas, 100); // 稍微延迟确保Excalidraw已加载
+        });
+    </script>
+</body>
+</html>

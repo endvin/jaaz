@@ -478,6 +478,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     eventBus.on('Socket::Session::Done', handleDone)
     eventBus.on('Socket::Session::Error', handleError)
     eventBus.on('Socket::Session::Info', handleInfo)
+    // 处理从媒体浮层触发的生成事件
+    const handleGenerateFromMedia = (payload: TEvents['Chat::GenerateFromMedia']) => {
+      onSendMessages(payload.newMessages, payload.configs)
+    }
+    eventBus.on('Chat::GenerateFromMedia', handleGenerateFromMedia)
     return () => {
       scrollEl?.removeEventListener('scroll', handleScroll)
 
@@ -505,6 +510,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       eventBus.off('Socket::Session::Done', handleDone)
       eventBus.off('Socket::Session::Error', handleError)
       eventBus.off('Socket::Session::Info', handleInfo)
+      eventBus.off('Chat::GenerateFromMedia', handleGenerateFromMedia)
     }
   })
 

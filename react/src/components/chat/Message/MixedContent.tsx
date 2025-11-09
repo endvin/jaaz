@@ -1,6 +1,7 @@
 import { Message, MessageContent } from '@/types/types'
 import { Markdown } from '../Markdown'
 import MessageImage from './Image'
+import MessageVideo from './Video'
 
 type MixedContentProps = {
   message: Message
@@ -19,22 +20,29 @@ type MixedContentTextProps = {
 // 图片组件 - 独立显示在聊天框外
 export const MixedContentImages: React.FC<MixedContentImagesProps> = ({ contents }) => {
   const images = contents.filter((content) => content.type === 'image_url')
-  
-  if (images.length === 0) return null
+  const videos = contents.filter((content) => content.type === 'video_url')
+
+  if (images.length === 0 && videos.length === 0) return null
 
   return (
     <div className="px-4">
-      {images.length === 1 ? (
-        // 单张图片：保持长宽比，最大宽度限制
+      {images.length + videos.length === 1 ? (
         <div className="max-h-[512px] flex justify-end">
-          <MessageImage content={images[0]} />
+          {images.length === 1 ? (
+            <MessageImage content={images[0]} />
+          ) : (
+            <MessageVideo content={videos[0] as any} />
+          )}
         </div>
       ) : (
-        // 多张图片：横向排布，第一张图靠右
         <div className="flex gap-2 max-h-[512px] justify-end flex-row-reverse">
-          {images.map((image, index) => (
+          {[...images, ...videos].map((media, index) => (
             <div key={index} className="max-h-[512px]">
-              <MessageImage content={image} />
+              {media.type === 'image_url' ? (
+                <MessageImage content={media} />
+              ) : (
+                <MessageVideo content={media as any} />
+              )}
             </div>
           ))}
         </div>
